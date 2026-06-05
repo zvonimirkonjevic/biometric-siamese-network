@@ -40,11 +40,18 @@ def siamese_adapter(model, batch, func):
     return func(model(img1), model(img2), labels)
 
 
+def _resolve_paths(df: pd.DataFrame) -> pd.DataFrame:
+    base = Path(__file__).parent
+    df = df.copy()
+    df["path"] = df["path"].apply(lambda p: str((base / p).resolve()))
+    return df
+
+
 def main():
-    train_real_df = pd.read_csv(DATA_ROOT / "train_real.csv")
-    test_real_df = pd.read_csv(DATA_ROOT / "test_real.csv")
-    train_altered_df = pd.read_csv(DATA_ROOT / "train_altered.csv")
-    test_altered_df = pd.read_csv(DATA_ROOT / "test_altered.csv")
+    train_real_df = _resolve_paths(pd.read_csv(DATA_ROOT / "train_real.csv"))
+    test_real_df = _resolve_paths(pd.read_csv(DATA_ROOT / "test_real.csv"))
+    train_altered_df = _resolve_paths(pd.read_csv(DATA_ROOT / "train_altered.csv"))
+    test_altered_df = _resolve_paths(pd.read_csv(DATA_ROOT / "test_altered.csv"))
 
     print(f"Train subjects: {train_real_df['subject'].nunique()}  |  Test subjects: {test_real_df['subject'].nunique()}")
 
