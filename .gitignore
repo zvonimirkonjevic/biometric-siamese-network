@@ -1,2 +1,8 @@
 # Ignore large dataset with images
 data/
+
+# Ignore pycache and other Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
