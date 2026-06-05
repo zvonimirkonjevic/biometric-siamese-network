@@ -39,17 +39,18 @@ class Trainer:
         """Sets the function that customizes how to run the model on a batch of training data."""
         self._adapter = adapter or ModelAdapter()
 
-    def fit(self, model: nn.Module, loader: DataLoader, loss_fn: nn.Module, optimizer: optim.Optimizer, epochs: int, valid_loader: DataLoader = None, scheduler=None, patience: int = None) -> dict:
+    def fit(self, model: nn.Module, loader: DataLoader, loss_fn: nn.Module, optimizer: optim.Optimizer, epochs: int, valid_loader: DataLoader = None, scheduler=None, patience: int = None, checkpoint_path: str = None) -> dict:
         """
         Trains the model on the given data.
         Returns a dictionary with the history over epochs of the following metrics:
         - average loss function on the training set.
         - average loss function on the validation set (if provided).
         - other metrics on the validation set (if provided).
+        If checkpoint_path is provided, saves the best model (by val_loss) there during training.
         """
         model_device = next(model.parameters()).device
         model.to(self._device), loss_fn.to(self._device)
-        history = _train_loop(model, loader, loss_fn, optimizer, epochs, self._device, self._adapter, valid_loader, self._metrics, scheduler, patience)
+        history = _train_loop(model, loader, loss_fn, optimizer, epochs, self._device, self._adapter, valid_loader, self._metrics, scheduler, patience, checkpoint_path)
         model.to(model_device), loss_fn.to(model_device)
         return history
 
@@ -111,7 +112,8 @@ def _train_loop(model: nn.Module,
                 valid_loader: DataLoader = None,
                 metrics: dict[str, Metric] = {},
                 scheduler=None,
-                patience: int = None) -> dict:
+                patience: int = None,
+                checkpoint_path: str = None) -> dict:
 
     print(f"===== Training on {device} device =====")
 
@@ -154,6 +156,8 @@ def _train_loop(model: nn.Module,
             if val_loss < best_val_loss:
                 best_val_loss = val_loss
                 epochs_without_improvement = 0
+                if checkpoint_path is not None:
+                    torch.save(model.state_dict(), checkpoint_path)
             else:
                 epochs_without_improvement += 1
                 if epochs_without_improvement >= patience:
